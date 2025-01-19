@@ -107,3 +107,18 @@ if response.status ~= "Done" then
 else
   vim.api.nvim_echo({{response.status, "Normal"}}, false, {})
 end
+
+;; implement
+function M.try_connect(port)
+  if not M.is_connected() then
+    M.connect(port)
+  end
+end
+
+function M.is_connected()
+  if client then
+    return true
+  else
+    return false
+  end
+end

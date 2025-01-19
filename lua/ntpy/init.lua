@@ -43,6 +43,7 @@ function M.connect(port)
       else
         vim.api.nvim_echo({{response.status, "Normal"}}, false, {})
       end
+
     end
   end)
 
@@ -84,6 +85,19 @@ function M.send_code(name, lines)
 
 end
 
+function M.try_connect(port)
+  if not M.is_connected() then
+    M.connect(port)
+  end
+end
+
+function M.is_connected()
+  if client then
+    return true
+  else
+    return false
+  end
+end
 function M.send_ntangle_v2()
 	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
   local found, ntangle_inc = pcall(require, "ntangle-inc")
