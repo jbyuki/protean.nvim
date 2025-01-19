@@ -1,0 +1,68 @@
+;;; ntpy
+;; implement
+function M.send_ntangle_v2()
+	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
+  ; get code content at current section
+  M.send_code(hl_elem.name, lines)
+end
+
+;; get code content at current section
+local found, ntangle_inc = pcall(require, "ntangle-inc")
+assert(found)
+
+local buf = vim.api.nvim_get_current_buf()
+local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+
+local lnum = row-1
+; get hl elem at lnum
+if hl_elem and hl_elem.part then
+	hl_elem = hl_elem.part
+end
+; get lines at hl elem
+
+;; get hl elem at lnum
+local hl_elem = ntangle_inc.Tto_hl_elem(buf, lnum)
+
+;; get lines at hl elem
+local lines = {}
+if hl_elem then
+	local Tangle = require"vim.tangle"
+	local ll = Tangle.get_ll_from_buf(buf)
+	assert(ll)
+	local hl = Tangle.get_hl_from_ll(ll)
+	assert(hl)
+
+	lines = hl:getlines_all(hl_elem, lines)
+else
+  return
+end
+
+;; implement
+function M.send_ntangle_visual_v2()
+	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
+  ; get code content at current_section visual v2
+  local name = "temp" .. tostring(os.time())
+  M.send_code(name)
+end
+
+;; get code content at current_section visual v2
+local _,slnum,_,_ = unpack(vim.fn.getpos("'<"))
+local _,elnum,_,_ = unpack(vim.fn.getpos("'>"))
+local buf = vim.api.nvim_get_current_buf()
+
+local found, ntangle_inc = pcall(require, "ntangle-inc")
+assert(found)
+
+local all_lines = {}
+for lnum=slnum-1,elnum-1 do
+  ; get hl elem at lnum
+  ; get lines at hl elem
+  ; append lines to all lines
+end
+
+local lines = all_lines
+
+;; append lines to all lines
+for _, line in ipairs(lines) do
+	table.insert(all_lines, line)
+end

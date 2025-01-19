@@ -1,0 +1,109 @@
+;;; ntpy
+;; implement
+function M.connect(port)
+  ; client coroutine
+  ; connect to server
+end
+
+;; variables
+local client
+
+;; connect to server
+client = vim.uv.new_tcp()
+client:connect("127.0.0.1", port, function(err)
+  print("Connected.")
+  assert(not err, err)
+  client:read_start(vim.schedule_wrap(function(err, data)
+    assert(not err, err)
+    if data then
+      ; add data to received data
+      coroutine.resume(client_co)
+    else
+      client:close()
+      client = nil
+    end
+  end))
+end)
+
+;; variables
+local client_co
+
+;; client coroutine
+client_co = coroutine.create(function()
+  while true do
+    ; wait for code to send
+    ; send code to server
+    ; wait for response from server
+  end
+end)
+
+; clear client states
+coroutine.resume(client_co)
+
+;; variables
+local send_queue = {}
+
+;; clear client states
+send_queue = {}
+
+;; wait for code to send
+while #send_queue == 0 do
+  coroutine.yield()
+end
+
+;; implement
+function M.send_code(name, lines)
+  local msg = {}
+  msg.name = name
+  msg.lines = lines
+  table.insert(send_queue, msg)
+  ; resume client if running otherwise error
+end
+
+;; resume client if running otherwise error
+if client_co and coroutine.status(client_co) == "suspended" then
+  coroutine.resume(client_co)
+else
+  vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+end
+
+;; send code to server
+local to_send = send_queue[1]
+table.remove(send_queue, 1)
+
+local msg = {}
+msg.cmd = "execute"
+msg.data = to_send
+local data = vim.json.encode(msg)
+client:write(data .. "\n")
+
+;; variables
+local received_data = ""
+
+;; clear client states
+received_data = ""
+
+;; add data to received data
+received_data = received_data .. data
+
+;;- client coroutine
+local read_response = function()
+  while true do
+    local pos = received_data:find("\n")
+    if pos then
+      local line = received_data:sub(1,pos-1)
+      received_data = received_data:sub(pos+1)
+      return vim.json.decode(line)
+    else
+      coroutine.yield()
+    end
+  end
+end
+
+;; wait for response from server
+local response = read_response()
+if response.status ~= "Done" then
+  vim.api.nvim_echo({{response.status, "Error"}}, true, {})
+else
+  vim.api.nvim_echo({{response.status, "Normal"}}, false, {})
+end

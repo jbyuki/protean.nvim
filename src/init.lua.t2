@@ -1,0 +1,6 @@
+;;; ntpy
+:: ../lua/ntpy/init.lua
+local M = {}
+; variables
+; implement
+return M
