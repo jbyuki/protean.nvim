@@ -54,14 +54,25 @@ function M.connect(port, on_connected)
   coroutine.resume(client_co)
 
   client = vim.uv.new_tcp()
-  client:connect("127.0.0.1", port, function(err)
+  client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
     print("Connected.")
     if on_connected then
       vim.schedule(function() on_connected() end)
     end
-    assert(not err, err)
+    if err then
+      vim.schedule(function()
+        vim.api.nvim_echo({{err, "Error"}}, true, {})
+      end)
+      client:close()
+      client = nil
+      return
+    end
     client:read_start(vim.schedule_wrap(function(err, data)
-      assert(not err, err)
+      if err then
+        vim.schedule(function()
+          vim.api.nvim_echo({{err, "Error"}}, true, {})
+        end)
+      end
       if data then
         received_data = received_data .. data
 
@@ -71,7 +82,7 @@ function M.connect(port, on_connected)
         client = nil
       end
     end))
-  end)
+  end))
 
 end
 
