@@ -8,7 +8,7 @@ local send_queue = {}
 
 local received_data = ""
 
-function M.connect(port)
+function M.connect(port, on_connected)
   local read_response = function()
     while true do
       local pos = received_data:find("\n")
@@ -56,6 +56,9 @@ function M.connect(port)
   client = vim.uv.new_tcp()
   client:connect("127.0.0.1", port, function(err)
     print("Connected.")
+    if on_connected then
+      vim.schedule(function() on_connected() end)
+    end
     assert(not err, err)
     client:read_start(vim.schedule_wrap(function(err, data)
       assert(not err, err)
@@ -85,9 +88,13 @@ function M.send_code(name, lines)
 
 end
 
-function M.try_connect(port)
+function M.try_connect(port, on_connected)
   if not M.is_connected() then
-    M.connect(port)
+    M.connect(port, on_connected)
+  else
+    if on_connected then
+      on_connected()
+    end
   end
 end
 
