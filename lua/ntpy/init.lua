@@ -9,7 +9,6 @@ local send_queue = {}
 local received_data = ""
 
 function M.connect(port, on_connected)
-  print("CON")
   local read_response = function()
     while true do
       local pos = received_data:find("\n")
@@ -100,7 +99,6 @@ function M.send_code(name, lines)
 end
 
 function M.try_connect(port, on_connected)
-  print("is connected ", M.is_connected())
   if not M.is_connected() then
     M.connect(port, on_connected)
   else

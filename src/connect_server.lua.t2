@@ -1,7 +1,6 @@
 ;;; ntpy
 ;; implement
 function M.connect(port, on_connected)
-  print("CON")
   ; client coroutine
   ; connect to server
 end
@@ -124,7 +123,6 @@ end
 
 ;; implement
 function M.try_connect(port, on_connected)
-  print("is connected ", M.is_connected())
   if not M.is_connected() then
     M.connect(port, on_connected)
   else
