@@ -1,0 +1,8 @@
+;;; ntpy
+;; implement
+function M.kill_loop()
+  local msg = {}
+  msg.cmd = "killLoop"
+  table.insert(send_queue, msg)
+  ; resume client if running otherwise error
+end

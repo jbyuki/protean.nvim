@@ -9,6 +9,7 @@ local send_queue = {}
 local received_data = ""
 
 function M.connect(port, on_connected)
+  print("CON")
   local read_response = function()
     while true do
       local pos = received_data:find("\n")
@@ -31,10 +32,7 @@ function M.connect(port, on_connected)
       local to_send = send_queue[1]
       table.remove(send_queue, 1)
 
-      local msg = {}
-      msg.cmd = "execute"
-      msg.data = to_send
-      local data = vim.json.encode(msg)
+      local data = vim.json.encode(to_send)
       client:write(data .. "\n")
 
       local response = read_response()
@@ -88,8 +86,10 @@ end
 
 function M.send_code(name, lines)
   local msg = {}
-  msg.name = name
-  msg.lines = lines
+  msg.cmd = "execute"
+  msg.data = {}
+  msg.data.name = name
+  msg.data.lines = lines
   table.insert(send_queue, msg)
   if client_co and coroutine.status(client_co) == "suspended" then
     coroutine.resume(client_co)
@@ -100,6 +100,7 @@ function M.send_code(name, lines)
 end
 
 function M.try_connect(port, on_connected)
+  print("is connected ", M.is_connected())
   if not M.is_connected() then
     M.connect(port, on_connected)
   else
@@ -115,6 +116,17 @@ function M.is_connected()
   else
     return false
   end
+end
+function M.kill_loop()
+  local msg = {}
+  msg.cmd = "killLoop"
+  table.insert(send_queue, msg)
+  if client_co and coroutine.status(client_co) == "suspended" then
+    coroutine.resume(client_co)
+  else
+    vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+  end
+
 end
 function M.send_ntangle_v2()
 	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})

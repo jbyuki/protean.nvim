@@ -1,6 +1,7 @@
 ;;; ntpy
 ;; implement
 function M.connect(port, on_connected)
+  print("CON")
   ; client coroutine
   ; connect to server
 end
@@ -68,8 +69,10 @@ end
 ;; implement
 function M.send_code(name, lines)
   local msg = {}
-  msg.name = name
-  msg.lines = lines
+  msg.cmd = "execute"
+  msg.data = {}
+  msg.data.name = name
+  msg.data.lines = lines
   table.insert(send_queue, msg)
   ; resume client if running otherwise error
 end
@@ -85,10 +88,7 @@ end
 local to_send = send_queue[1]
 table.remove(send_queue, 1)
 
-local msg = {}
-msg.cmd = "execute"
-msg.data = to_send
-local data = vim.json.encode(msg)
+local data = vim.json.encode(to_send)
 client:write(data .. "\n")
 
 ;; variables
@@ -124,6 +124,7 @@ end
 
 ;; implement
 function M.try_connect(port, on_connected)
+  print("is connected ", M.is_connected())
   if not M.is_connected() then
     M.connect(port, on_connected)
   else
