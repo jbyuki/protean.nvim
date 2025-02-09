@@ -3,5 +3,5 @@ ntpy.nvim
 
 Client for [ntpy](https://github.com/jbyuki/ntpy)
 
-https://github.com/user-attachments/assets/6dd6b71d-3595-426f-bd52-d51d4f52c010
+https://github.com/user-attachments/assets/00f6a6f0-fc03-4252-870e-129511e7baf9
 
