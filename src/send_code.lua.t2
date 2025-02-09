@@ -2,7 +2,7 @@
 ;; implement
 function M.send_ntangle_v2()
   ; get code content at current section
-  M.send_code(hl_elem.name, lines)
+  M.send_code(hl_elem.name, lines_lit)
 end
 
 ;; get code content at current section
@@ -24,6 +24,7 @@ local hl_elem = ntangle_inc.Tto_hl_elem(buf, lnum)
 
 ;; get lines at hl elem
 local lines = {}
+local section_name
 if hl_elem then
 	local Tangle = require"vim.tangle"
 	local ll = Tangle.get_ll_from_buf(buf)
@@ -31,7 +32,7 @@ if hl_elem then
 	local hl = Tangle.get_hl_from_ll(ll)
 	assert(hl)
 
-	lines = hl:getlines_all(hl_elem, lines)
+	lines_lit = hl:getlines_all_lit(hl_elem)
 else
   return
 end

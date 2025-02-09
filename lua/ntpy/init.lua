@@ -91,12 +91,31 @@ function M.connect(port, on_connected)
 
 end
 
-function M.send_code(name, lines)
+function M.send_code(name, lines_lit)
+  for section_name, lines in pairs(lines_lit) do
+    if section_name ~= name then
+      local msg = {}
+      msg.cmd = "execute"
+      msg.data = {}
+      msg.data.name = section_name
+      msg.data.lines = lines
+      msg.data.execute = false
+      table.insert(send_queue, msg)
+      if client_co and coroutine.status(client_co) == "suspended" then
+        coroutine.resume(client_co)
+      else
+        vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+      end
+
+    end
+  end
+
   local msg = {}
   msg.cmd = "execute"
   msg.data = {}
   msg.data.name = name
-  msg.data.lines = lines
+  msg.data.lines = lines_lit[name]
+  msg.data.execute = true
   table.insert(send_queue, msg)
   if client_co and coroutine.status(client_co) == "suspended" then
     coroutine.resume(client_co)
@@ -179,6 +198,7 @@ function M.send_ntangle_v2()
   	hl_elem = hl_elem.part
   end
   local lines = {}
+  local section_name
   if hl_elem then
   	local Tangle = require"vim.tangle"
   	local ll = Tangle.get_ll_from_buf(buf)
@@ -186,13 +206,13 @@ function M.send_ntangle_v2()
   	local hl = Tangle.get_hl_from_ll(ll)
   	assert(hl)
 
-  	lines = hl:getlines_all(hl_elem, lines)
+  	lines_lit = hl:getlines_all_lit(hl_elem)
   else
     return
   end
 
 
-  M.send_code(hl_elem.name, lines)
+  M.send_code(hl_elem.name, lines_lit)
 end
 
 function M.send_ntangle_visual_v2()
@@ -208,6 +228,7 @@ function M.send_ntangle_visual_v2()
     local hl_elem = ntangle_inc.Tto_hl_elem(buf, lnum)
 
     local lines = {}
+    local section_name
     if hl_elem then
     	local Tangle = require"vim.tangle"
     	local ll = Tangle.get_ll_from_buf(buf)
@@ -215,7 +236,7 @@ function M.send_ntangle_visual_v2()
     	local hl = Tangle.get_hl_from_ll(ll)
     	assert(hl)
 
-    	lines = hl:getlines_all(hl_elem, lines)
+    	lines_lit = hl:getlines_all_lit(hl_elem)
     else
       return
     end

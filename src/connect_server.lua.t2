@@ -76,12 +76,26 @@ while #send_queue == 0 do
 end
 
 ;; implement
-function M.send_code(name, lines)
+function M.send_code(name, lines_lit)
+  for section_name, lines in pairs(lines_lit) do
+    if section_name ~= name then
+      local msg = {}
+      msg.cmd = "execute"
+      msg.data = {}
+      msg.data.name = section_name
+      msg.data.lines = lines
+      msg.data.execute = false
+      table.insert(send_queue, msg)
+      ; resume client if running otherwise error
+    end
+  end
+
   local msg = {}
   msg.cmd = "execute"
   msg.data = {}
   msg.data.name = name
-  msg.data.lines = lines
+  msg.data.lines = lines_lit[name]
+  msg.data.execute = true
   table.insert(send_queue, msg)
   ; resume client if running otherwise error
 end
