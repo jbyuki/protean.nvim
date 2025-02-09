@@ -92,21 +92,23 @@ function M.connect(port, on_connected)
 end
 
 function M.send_code(name, lines_lit)
-  for section_name, lines in pairs(lines_lit) do
-    if section_name ~= name then
-      local msg = {}
-      msg.cmd = "execute"
-      msg.data = {}
-      msg.data.name = section_name
-      msg.data.lines = lines
-      msg.data.execute = false
-      table.insert(send_queue, msg)
-      if client_co and coroutine.status(client_co) == "suspended" then
-        coroutine.resume(client_co)
-      else
-        vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
-      end
+  if name ~= "loop" then
+    for section_name, lines in pairs(lines_lit) do
+      if section_name ~= name then
+        local msg = {}
+        msg.cmd = "execute"
+        msg.data = {}
+        msg.data.name = section_name
+        msg.data.lines = lines
+        msg.data.execute = false
+        table.insert(send_queue, msg)
+        if client_co and coroutine.status(client_co) == "suspended" then
+          coroutine.resume(client_co)
+        else
+          vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+        end
 
+      end
     end
   end
 
