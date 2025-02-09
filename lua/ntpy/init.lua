@@ -214,6 +214,31 @@ function M.send_ntangle_v2()
   end
 
 
+	local cur_hl_elem = ntangle_inc.Tto_hl_elem(buf, row-1)
+	local cur_row = row
+	while cur_hl_elem and cur_hl_elem.type ~= ntangle_inc.HL_ELEM_TYPE.SECTION_PART do
+		cur_row = cur_row - 1
+		cur_hl_elem = cur_hl_elem.prev
+	end
+
+	local start_row = cur_row+1
+
+	local section_length = #lines_lit[hl_elem.name]
+
+	vim.schedule(function()
+		local ns = vim.api.nvim_create_namespace("")
+		vim.api.nvim_set_hl(0, "SendNTPY", { reverse = true })
+		for i=start_row,start_row+section_length-1 do
+			vim.api.nvim_buf_add_highlight(buf, ns, "SendNTPY", i-1, 0, -1)
+		end
+
+		vim.defer_fn(function()
+			vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+
+		end, 150)
+	end)
+
+
   M.send_code(hl_elem.name, lines_lit)
 end
 
