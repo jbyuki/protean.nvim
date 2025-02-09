@@ -8,6 +8,8 @@ local send_queue = {}
 
 local received_data = ""
 
+local server_handle
+
 function M.connect(port, on_connected)
   local read_response = function()
     while true do
@@ -37,8 +39,6 @@ function M.connect(port, on_connected)
       local response = read_response()
       if response.status ~= "Done" then
         vim.api.nvim_echo({{response.status, "Error"}}, true, {})
-      else
-        vim.api.nvim_echo({{response.status, "Normal"}}, false, {})
       end
 
     end
@@ -50,36 +50,44 @@ function M.connect(port, on_connected)
 
   coroutine.resume(client_co)
 
-  client = vim.uv.new_tcp()
-  client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
-    print("Connected.")
-    if on_connected then
-      vim.schedule(function() on_connected() end)
-    end
-    if err then
-      vim.schedule(function()
-        vim.api.nvim_echo({{err, "Error"}}, true, {})
-      end)
-      client:close()
-      client = nil
+  local try_connect
+  try_connect = function(num_retries)
+    if num_retries > 3 then
+      vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
       return
     end
-    client:read_start(vim.schedule_wrap(function(err, data)
-      if err then
-        vim.schedule(function()
-          vim.api.nvim_echo({{err, "Error"}}, true, {})
-        end)
-      end
-      if data then
-        received_data = received_data .. data
 
-        coroutine.resume(client_co)
-      else
+    client = vim.uv.new_tcp()
+    client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
+      if err then
         client:close()
         client = nil
+        vim.defer_fn(function() try_connect(num_retries+1) end, 250*(num_retries+1))
+        return
       end
+
+      if on_connected then
+        vim.schedule(function() on_connected() end)
+      end
+      client:read_start(vim.schedule_wrap(function(err, data)
+        if err then
+          vim.schedule(function()
+            vim.api.nvim_echo({{err, "Error"}}, true, {})
+          end)
+        end
+        if data then
+          received_data = received_data .. data
+
+          coroutine.resume(client_co)
+        else
+          client:close()
+          client = nil
+        end
+      end))
     end))
-  end))
+  end
+
+  try_connect(0)
 
 end
 
@@ -100,6 +108,26 @@ end
 
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
+    local err
+    local stdin = vim.uv.new_pipe()
+    local stdout = vim.uv.new_pipe()
+    local stderr = vim.uv.new_pipe()
+
+    server_handle, err = vim.uv.spawn("python", {
+      stdio = {stdin, stdout, stderr},
+      args = {vim.g.ntpy_server},
+      cwd = vim.fs.dirname(vim.g.ntpy_server),
+    }, function(code, signal)
+    end)
+    stdout:read_start(function(err, data)
+      assert(not err, err)
+    end)
+
+    stderr:read_start(function(err, data)
+      assert(not err, err)
+    end)
+
+
     M.connect(port, on_connected)
   else
     if on_connected then
@@ -109,10 +137,21 @@ function M.try_connect(port, on_connected)
 end
 
 function M.is_connected()
+  if not server_handle then
+    return false
+  end
+
   if client then
     return true
   else
     return false
+  end
+end
+
+function M.stop()
+  if server_handle then
+    server_handle:kill() 
+    server_handle = nil
   end
 end
 function M.kill_loop()
@@ -127,7 +166,6 @@ function M.kill_loop()
 
 end
 function M.send_ntangle_v2()
-	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
   local found, ntangle_inc = pcall(require, "ntangle-inc")
   assert(found)
 
@@ -158,7 +196,6 @@ function M.send_ntangle_v2()
 end
 
 function M.send_ntangle_visual_v2()
-	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
   local _,slnum,_,_ = unpack(vim.fn.getpos("'<"))
   local _,elnum,_,_ = unpack(vim.fn.getpos("'>"))
   local buf = vim.api.nvim_get_current_buf()

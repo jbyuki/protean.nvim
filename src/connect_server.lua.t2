@@ -2,42 +2,52 @@
 ;; implement
 function M.connect(port, on_connected)
   ; client coroutine
+  ; connect to server function
   ; connect to server
 end
 
 ;; variables
 local client
 
-;; connect to server
-client = vim.uv.new_tcp()
-client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
-  print("Connected.")
-  if on_connected then
-    vim.schedule(function() on_connected() end)
-  end
-  if err then
-    vim.schedule(function()
-      vim.api.nvim_echo({{err, "Error"}}, true, {})
-    end)
-    client:close()
-    client = nil
+;; connect to server function
+local try_connect
+try_connect = function(num_retries)
+  if num_retries > 3 then
+    vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
     return
   end
-  client:read_start(vim.schedule_wrap(function(err, data)
+
+  client = vim.uv.new_tcp()
+  client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
     if err then
-      vim.schedule(function()
-        vim.api.nvim_echo({{err, "Error"}}, true, {})
-      end)
-    end
-    if data then
-      ; add data to received data
-      coroutine.resume(client_co)
-    else
       client:close()
       client = nil
+      vim.defer_fn(function() try_connect(num_retries+1) end, 250*(num_retries+1))
+      return
     end
+
+    if on_connected then
+      vim.schedule(function() on_connected() end)
+    end
+    client:read_start(vim.schedule_wrap(function(err, data)
+      if err then
+        vim.schedule(function()
+          vim.api.nvim_echo({{err, "Error"}}, true, {})
+        end)
+      end
+      if data then
+        ; add data to received data
+        coroutine.resume(client_co)
+      else
+        client:close()
+        client = nil
+      end
+    end))
   end))
-end))
+end
+
+;; connect to server
+try_connect(0)
 
 ;; variables
 local client_co
@@ -117,13 +127,12 @@ end
 local response = read_response()
 if response.status ~= "Done" then
   vim.api.nvim_echo({{response.status, "Error"}}, true, {})
-else
-  vim.api.nvim_echo({{response.status, "Normal"}}, false, {})
 end
 
 ;; implement
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
+    ; start server
     M.connect(port, on_connected)
   else
     if on_connected then
@@ -133,9 +142,53 @@ function M.try_connect(port, on_connected)
 end
 
 function M.is_connected()
+  ; check that server is running
   if client then
     return true
   else
     return false
+  end
+end
+
+;; variables
+local server_handle
+
+;; start server
+local err
+; create pipes
+server_handle, err = vim.uv.spawn("python", {
+  stdio = {stdin, stdout, stderr},
+  args = {vim.g.ntpy_server},
+  cwd = vim.fs.dirname(vim.g.ntpy_server),
+}, function(code, signal)
+end)
+; register pipes callbacks
+
+;; create pipes
+local stdin = vim.uv.new_pipe()
+local stdout = vim.uv.new_pipe()
+local stderr = vim.uv.new_pipe()
+
+;; register pipes callbacks
+stdout:read_start(function(err, data)
+  assert(not err, err)
+  ; output server process
+end)
+
+stderr:read_start(function(err, data)
+  assert(not err, err)
+  ; output error server process
+end)
+
+;; check that server is running
+if not server_handle then
+  return false
+end
+
+;; implement
+function M.stop()
+  if server_handle then
+    server_handle:kill() 
+    server_handle = nil
   end
 end

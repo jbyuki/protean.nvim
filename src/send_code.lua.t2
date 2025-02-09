@@ -1,7 +1,6 @@
 ;;; ntpy
 ;; implement
 function M.send_ntangle_v2()
-	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
   ; get code content at current section
   M.send_code(hl_elem.name, lines)
 end
@@ -39,7 +38,6 @@ end
 
 ;; implement
 function M.send_ntangle_visual_v2()
-	vim.api.nvim_echo({{"Sending.", "Normal"}}, false, {})
   ; get code content at current_section visual v2
   local name = "temp" .. tostring(os.time())
   M.send_code(name)
