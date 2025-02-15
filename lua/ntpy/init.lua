@@ -52,7 +52,7 @@ function M.connect(port, on_connected)
 
   local try_connect
   try_connect = function(num_retries)
-    if num_retries > 3 then
+    if num_retries > 5 then
       vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
       return
     end
