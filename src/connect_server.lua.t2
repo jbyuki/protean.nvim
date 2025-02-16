@@ -148,7 +148,7 @@ end
 ;; implement
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
-    ; start server
+    -- ; start server
     M.connect(port, on_connected)
   else
     if on_connected then

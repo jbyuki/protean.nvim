@@ -129,26 +129,7 @@ end
 
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
-    local err
-    local stdin = vim.uv.new_pipe()
-    local stdout = vim.uv.new_pipe()
-    local stderr = vim.uv.new_pipe()
-
-    server_handle, err = vim.uv.spawn("python", {
-      stdio = {stdin, stdout, stderr},
-      args = {vim.g.ntpy_server},
-      cwd = vim.fs.dirname(vim.g.ntpy_server),
-    }, function(code, signal)
-    end)
-    stdout:read_start(function(err, data)
-      assert(not err, err)
-    end)
-
-    stderr:read_start(function(err, data)
-      assert(not err, err)
-    end)
-
-
+    -- ; start server
     M.connect(port, on_connected)
   else
     if on_connected then
@@ -279,4 +260,15 @@ function M.send_ntangle_visual_v2()
   M.send_code(name)
 end
 
+function M.toggle_backend()
+  local msg = {}
+  msg.cmd = "toggleBackend"
+  table.insert(send_queue, msg)
+  if client_co and coroutine.status(client_co) == "suspended" then
+    coroutine.resume(client_co)
+  else
+    vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+  end
+
+end
 return M

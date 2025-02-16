@@ -1,0 +1,8 @@
+;;; ntpy
+;; implement
+function M.toggle_backend()
+  local msg = {}
+  msg.cmd = "toggleBackend"
+  table.insert(send_queue, msg)
+  ; resume client if running otherwise error
+end
