@@ -1,6 +1,6 @@
 ;;; ntpy
 ;; implement
-function M.connect(port, on_connected)
+function M.connect(port, on_connected, on_not_connected, max_retries)
   ; client coroutine
   ; connect to server function
   ; connect to server
@@ -12,15 +12,21 @@ local client
 ;; connect to server function
 local try_connect
 try_connect = function(num_retries)
-  if num_retries > 5 then
-    vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
+  if num_retries > max_retries then
+    if not on_not_connected then
+      vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
+    else
+      vim.schedule(function() on_not_connected() end)
+    end
     return
   end
 
   client = vim.uv.new_tcp()
   client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
     if err then
-      client:close()
+      if client then
+        client:close()
+      end
       client = nil
       vim.defer_fn(function() try_connect(num_retries+1) end, 250*(num_retries+1))
       return
@@ -148,8 +154,10 @@ end
 ;; implement
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
-    -- ; start server
-    M.connect(port, on_connected)
+    M.connect(port, on_connected, function()
+      ; start server
+      M.connect(port, on_connected, nil, 5)
+    end, 1)
   else
     if on_connected then
       on_connected()

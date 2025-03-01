@@ -10,7 +10,7 @@ local received_data = ""
 
 local server_handle
 
-function M.connect(port, on_connected)
+function M.connect(port, on_connected, on_not_connected, max_retries)
   local read_response = function()
     while true do
       local pos = received_data:find("\n")
@@ -52,15 +52,21 @@ function M.connect(port, on_connected)
 
   local try_connect
   try_connect = function(num_retries)
-    if num_retries > 5 then
-      vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
+    if num_retries > max_retries then
+      if not on_not_connected then
+        vim.api.nvim_echo({{"Could not connect to server", "Error"}}, true, {})
+      else
+        vim.schedule(function() on_not_connected() end)
+      end
       return
     end
 
     client = vim.uv.new_tcp()
     client:connect("127.0.0.1", port, vim.schedule_wrap(function(err)
       if err then
-        client:close()
+        if client then
+          client:close()
+        end
         client = nil
         vim.defer_fn(function() try_connect(num_retries+1) end, 250*(num_retries+1))
         return
@@ -129,8 +135,29 @@ end
 
 function M.try_connect(port, on_connected)
   if not M.is_connected() then
-    -- ; start server
-    M.connect(port, on_connected)
+    M.connect(port, on_connected, function()
+      local err
+      local stdin = vim.uv.new_pipe()
+      local stdout = vim.uv.new_pipe()
+      local stderr = vim.uv.new_pipe()
+
+      server_handle, err = vim.uv.spawn("python", {
+        stdio = {stdin, stdout, stderr},
+        args = {vim.g.ntpy_server},
+        cwd = vim.fs.dirname(vim.g.ntpy_server),
+      }, function(code, signal)
+      end)
+      stdout:read_start(function(err, data)
+        assert(not err, err)
+      end)
+
+      stderr:read_start(function(err, data)
+        assert(not err, err)
+      end)
+
+
+      M.connect(port, on_connected, nil, 5)
+    end, 1)
   else
     if on_connected then
       on_connected()
