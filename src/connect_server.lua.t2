@@ -1,6 +1,6 @@
 ;;; ntpy
 ;; implement
-function M.connect(port, on_connected, on_not_connected, max_retries)
+function M.connect(port, on_connected, on_not_connected, max_retries, filetype)
   ; client coroutine
   ; connect to server function
   ; connect to server
@@ -152,12 +152,12 @@ if response.status ~= "Done" then
 end
 
 ;; implement
-function M.try_connect(port, on_connected)
+function M.try_connect(port, on_connected, filetype)
   if not M.is_connected() then
     M.connect(port, on_connected, function()
       ; start server
-      M.connect(port, on_connected, nil, 5)
-    end, 1)
+      M.connect(port, on_connected, nil, 5, filetype)
+    end, 1, filetype)
   else
     if on_connected then
       on_connected()
@@ -166,7 +166,6 @@ function M.try_connect(port, on_connected)
 end
 
 function M.is_connected()
-  ; check that server is running
   if client then
     return true
   else
@@ -180,13 +179,20 @@ local server_handle
 ;; start server
 local err
 ; create pipes
+if filetype == 'python' then
+  ; start python server
+elseif filetype == 'javascript' then
+  ; start javascript server
+end
+; register pipes callbacks
+
+;; start python server
 server_handle, err = vim.uv.spawn("python", {
   stdio = {stdin, stdout, stderr},
   args = {vim.g.ntpy_server},
   cwd = vim.fs.dirname(vim.g.ntpy_server),
 }, function(code, signal)
 end)
-; register pipes callbacks
 
 ;; create pipes
 local stdin = vim.uv.new_pipe()
@@ -204,11 +210,6 @@ stderr:read_start(function(err, data)
   ; output error server process
 end)
 
-;; check that server is running
-if not server_handle then
-  return false
-end
-
 ;; implement
 function M.stop()
   if server_handle then
@@ -216,3 +217,11 @@ function M.stop()
     server_handle = nil
   end
 end
+
+;; start javascript server
+server_handle, err = vim.uv.spawn("node", {
+  stdio = {stdin, stdout, stderr},
+  args = {vim.g.ntpy_js_server},
+  cwd = vim.fs.dirname(vim.g.ntpy_js_server),
+}, function(code, signal)
+end)

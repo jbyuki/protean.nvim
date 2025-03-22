@@ -10,7 +10,7 @@ local received_data = ""
 
 local server_handle
 
-function M.connect(port, on_connected, on_not_connected, max_retries)
+function M.connect(port, on_connected, on_not_connected, max_retries, filetype)
   local read_response = function()
     while true do
       local pos = received_data:find("\n")
@@ -133,7 +133,7 @@ function M.send_code(name, lines_lit)
 
 end
 
-function M.try_connect(port, on_connected)
+function M.try_connect(port, on_connected, filetype)
   if not M.is_connected() then
     M.connect(port, on_connected, function()
       local err
@@ -141,12 +141,22 @@ function M.try_connect(port, on_connected)
       local stdout = vim.uv.new_pipe()
       local stderr = vim.uv.new_pipe()
 
-      server_handle, err = vim.uv.spawn("python", {
-        stdio = {stdin, stdout, stderr},
-        args = {vim.g.ntpy_server},
-        cwd = vim.fs.dirname(vim.g.ntpy_server),
-      }, function(code, signal)
-      end)
+      if filetype == 'python' then
+        server_handle, err = vim.uv.spawn("python", {
+          stdio = {stdin, stdout, stderr},
+          args = {vim.g.ntpy_server},
+          cwd = vim.fs.dirname(vim.g.ntpy_server),
+        }, function(code, signal)
+        end)
+
+      elseif filetype == 'javascript' then
+        server_handle, err = vim.uv.spawn("node", {
+          stdio = {stdin, stdout, stderr},
+          args = {vim.g.ntpy_js_server},
+          cwd = vim.fs.dirname(vim.g.ntpy_js_server),
+        }, function(code, signal)
+        end)
+      end
       stdout:read_start(function(err, data)
         assert(not err, err)
       end)
@@ -156,8 +166,8 @@ function M.try_connect(port, on_connected)
       end)
 
 
-      M.connect(port, on_connected, nil, 5)
-    end, 1)
+      M.connect(port, on_connected, nil, 5, filetype)
+    end, 1, filetype)
   else
     if on_connected then
       on_connected()
@@ -166,10 +176,6 @@ function M.try_connect(port, on_connected)
 end
 
 function M.is_connected()
-  if not server_handle then
-    return false
-  end
-
   if client then
     return true
   else
@@ -183,6 +189,7 @@ function M.stop()
     server_handle = nil
   end
 end
+
 function M.kill_loop()
   local msg = {}
   msg.cmd = "killLoop"
