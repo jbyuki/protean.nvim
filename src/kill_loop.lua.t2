@@ -1,4 +1,4 @@
-;;; ntpy
+;;; protean
 ;; implement
 function M.kill_loop()
   local msg = {}

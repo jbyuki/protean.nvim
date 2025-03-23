@@ -1,4 +1,4 @@
-;;; ntpy
+;;; protean
 ;; implement
 function M.send_ntangle_v2()
   ; get code content at current section

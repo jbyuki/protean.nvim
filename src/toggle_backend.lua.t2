@@ -1,4 +1,4 @@
-;;; ntpy
+;;; protean
 ;; implement
 function M.toggle_backend()
   local msg = {}

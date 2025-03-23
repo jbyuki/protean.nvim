@@ -144,16 +144,16 @@ function M.try_connect(port, on_connected, filetype)
       if filetype == 'python' then
         server_handle, err = vim.uv.spawn("python", {
           stdio = {stdin, stdout, stderr},
-          args = {vim.g.ntpy_server},
-          cwd = vim.fs.dirname(vim.g.ntpy_server),
+          args = {vim.g.protean_server},
+          cwd = vim.fs.dirname(vim.g.protean_server),
         }, function(code, signal)
         end)
 
       elseif filetype == 'javascript' then
         server_handle, err = vim.uv.spawn("node", {
           stdio = {stdin, stdout, stderr},
-          args = {vim.g.ntpy_js_server},
-          cwd = vim.fs.dirname(vim.g.ntpy_js_server),
+          args = {vim.g.protean_js_server},
+          cwd = vim.fs.dirname(vim.g.protean_js_server),
         }, function(code, signal)
         end)
       end

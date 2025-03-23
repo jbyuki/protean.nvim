@@ -1,5 +1,5 @@
-;;; ntpy
-:: ../lua/ntpy/init.lua
+;;; protean
+:: ../lua/protean/init.lua
 local M = {}
 ; variables
 ; implement
