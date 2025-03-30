@@ -74,16 +74,25 @@ end
 ;; restore colors
 vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 
+;; variables
+local anonymous_section_idx = 1
+
 ;; implement
 function M.send_ntangle_visual_v2()
+  local name = "temp_section_protean_" .. tostring(anonymous_section_idx)
+	anonymous_section_idx = anonymous_section_idx + 1
+
   ; get code content at current_section visual v2
-  local name = "temp" .. tostring(os.time())
-  M.send_code(name)
+
+  M.send_code(name, all_lines)
 end
 
 ;; get code content at current_section visual v2
-local _,slnum,_,_ = unpack(vim.fn.getpos("'<"))
-local _,elnum,_,_ = unpack(vim.fn.getpos("'>"))
+local _,slnum,_,_ = unpack(vim.fn.getpos("v"))
+local _,elnum,_,_ = unpack(vim.fn.getpos("."))
+if slnum > elnum then
+	slnum ,elnum = elnum ,slnum
+end
 local buf = vim.api.nvim_get_current_buf()
 
 local found, ntangle_inc = pcall(require, "ntangle-inc")
@@ -92,13 +101,18 @@ assert(found)
 local all_lines = {}
 for lnum=slnum-1,elnum-1 do
   ; get hl elem at lnum
-  ; get lines at hl elem
-  ; append lines to all lines
+  ; append lines from hl elem
 end
 
-local lines = all_lines
+;; append lines from hl elem
+if hl_elem then
+	local Tangle = require"vim.tangle"
+	local ll = Tangle.get_ll_from_buf(buf)
+	assert(ll)
+	local hl = Tangle.get_hl_from_ll(ll)
+	assert(hl)
 
-;; append lines to all lines
-for _, line in ipairs(lines) do
-	table.insert(all_lines, line)
+	hl:getlines_next_lit(hl_elem, name, all_lines)
+else
+  return
 end

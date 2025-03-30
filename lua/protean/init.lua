@@ -10,6 +10,8 @@ local received_data = ""
 
 local server_handle
 
+local anonymous_section_idx = 1
+
 function M.connect(port, on_connected, on_not_connected, max_retries, filetype)
   local read_response = function()
     while true do
@@ -258,8 +260,14 @@ function M.send_ntangle_v2()
 end
 
 function M.send_ntangle_visual_v2()
-  local _,slnum,_,_ = unpack(vim.fn.getpos("'<"))
-  local _,elnum,_,_ = unpack(vim.fn.getpos("'>"))
+  local name = "temp_section_protean_" .. tostring(anonymous_section_idx)
+	anonymous_section_idx = anonymous_section_idx + 1
+
+  local _,slnum,_,_ = unpack(vim.fn.getpos("v"))
+  local _,elnum,_,_ = unpack(vim.fn.getpos("."))
+  if slnum > elnum then
+  	slnum ,elnum = elnum ,slnum
+  end
   local buf = vim.api.nvim_get_current_buf()
 
   local found, ntangle_inc = pcall(require, "ntangle-inc")
@@ -269,8 +277,6 @@ function M.send_ntangle_visual_v2()
   for lnum=slnum-1,elnum-1 do
     local hl_elem = ntangle_inc.Tto_hl_elem(buf, lnum)
 
-    local lines = {}
-    local section_name
     if hl_elem then
     	local Tangle = require"vim.tangle"
     	local ll = Tangle.get_ll_from_buf(buf)
@@ -278,20 +284,14 @@ function M.send_ntangle_visual_v2()
     	local hl = Tangle.get_hl_from_ll(ll)
     	assert(hl)
 
-    	lines_lit = hl:getlines_all_lit(hl_elem)
+    	hl:getlines_next_lit(hl_elem, name, all_lines)
     else
       return
     end
-
-    for _, line in ipairs(lines) do
-    	table.insert(all_lines, line)
-    end
   end
 
-  local lines = all_lines
 
-  local name = "temp" .. tostring(os.time())
-  M.send_code(name)
+  M.send_code(name, all_lines)
 end
 
 function M.toggle_backend()
