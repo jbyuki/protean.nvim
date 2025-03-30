@@ -284,7 +284,7 @@ function M.send_ntangle_visual_v2()
     	local hl = Tangle.get_hl_from_ll(ll)
     	assert(hl)
 
-    	hl:getlines_next_lit(hl_elem, name, all_lines)
+    	hl:getlines_single_lit(hl_elem, name, all_lines)
     else
       return
     end
