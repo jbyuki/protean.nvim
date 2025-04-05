@@ -83,18 +83,16 @@ end
 
 ;; implement
 function M.send_code(name, lines_lit)
-  if name ~= "loop" then
-    for section_name, lines in pairs(lines_lit) do
-      if section_name ~= name then
-        local msg = {}
-        msg.cmd = "execute"
-        msg.data = {}
-        msg.data.name = section_name
-        msg.data.lines = lines
-        msg.data.execute = false
-        table.insert(send_queue, msg)
-        ; resume client if running otherwise error
-      end
+  for section_name, lines in pairs(lines_lit) do
+    if section_name ~= name then
+      local msg = {}
+      msg.cmd = "execute"
+      msg.data = {}
+      msg.data.name = section_name
+      msg.data.lines = lines
+      msg.data.execute = false
+      table.insert(send_queue, msg)
+      ; resume client if running otherwise error
     end
   end
 
@@ -190,7 +188,7 @@ end
 server_handle, err = vim.uv.spawn("python", {
   stdio = {stdin, stdout, stderr},
   args = {vim.g.protean_server},
-  cwd = vim.fs.dirname(vim.g.protean_server),
+  cwd = vim.fn.getcwd(),
 }, function(code, signal)
 end)
 

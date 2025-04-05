@@ -79,12 +79,9 @@ local anonymous_section_idx = 1
 
 ;; implement
 function M.send_ntangle_visual_v2()
-  local name = "temp_section_protean_" .. tostring(anonymous_section_idx)
-	anonymous_section_idx = anonymous_section_idx + 1
-
   ; get code content at current_section visual v2
 
-  M.send_code(name, all_lines)
+  M.send_code(section_name, all_lines)
 end
 
 ;; get code content at current_section visual v2
@@ -97,6 +94,8 @@ local buf = vim.api.nvim_get_current_buf()
 
 local found, ntangle_inc = pcall(require, "ntangle-inc")
 assert(found)
+
+; get part hl elem for visual
 
 local all_lines = {}
 for lnum=slnum-1,elnum-1 do
@@ -112,7 +111,16 @@ if hl_elem then
 	local hl = Tangle.get_hl_from_ll(ll)
 	assert(hl)
 
-	hl:getlines_single_lit(hl_elem, name, all_lines)
+	hl:getlines_single_lit(hl_elem, section_name, all_lines)
 else
   return
 end
+
+;; get part hl elem for visual
+local lnum = slnum-1
+; get hl elem at lnum
+if hl_elem and hl_elem.part then
+	hl_elem = hl_elem.part
+end
+
+local section_name = hl_elem.name

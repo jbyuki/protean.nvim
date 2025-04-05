@@ -100,23 +100,21 @@ function M.connect(port, on_connected, on_not_connected, max_retries, filetype)
 end
 
 function M.send_code(name, lines_lit)
-  if name ~= "loop" then
-    for section_name, lines in pairs(lines_lit) do
-      if section_name ~= name then
-        local msg = {}
-        msg.cmd = "execute"
-        msg.data = {}
-        msg.data.name = section_name
-        msg.data.lines = lines
-        msg.data.execute = false
-        table.insert(send_queue, msg)
-        if client_co and coroutine.status(client_co) == "suspended" then
-          coroutine.resume(client_co)
-        else
-          vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
-        end
-
+  for section_name, lines in pairs(lines_lit) do
+    if section_name ~= name then
+      local msg = {}
+      msg.cmd = "execute"
+      msg.data = {}
+      msg.data.name = section_name
+      msg.data.lines = lines
+      msg.data.execute = false
+      table.insert(send_queue, msg)
+      if client_co and coroutine.status(client_co) == "suspended" then
+        coroutine.resume(client_co)
+      else
+        vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
       end
+
     end
   end
 
@@ -147,7 +145,7 @@ function M.try_connect(port, on_connected, filetype)
         server_handle, err = vim.uv.spawn("python", {
           stdio = {stdin, stdout, stderr},
           args = {vim.g.protean_server},
-          cwd = vim.fs.dirname(vim.g.protean_server),
+          cwd = vim.fn.getcwd(),
         }, function(code, signal)
         end)
 
@@ -260,9 +258,6 @@ function M.send_ntangle_v2()
 end
 
 function M.send_ntangle_visual_v2()
-  local name = "temp_section_protean_" .. tostring(anonymous_section_idx)
-	anonymous_section_idx = anonymous_section_idx + 1
-
   local _,slnum,_,_ = unpack(vim.fn.getpos("v"))
   local _,elnum,_,_ = unpack(vim.fn.getpos("."))
   if slnum > elnum then
@@ -272,6 +267,15 @@ function M.send_ntangle_visual_v2()
 
   local found, ntangle_inc = pcall(require, "ntangle-inc")
   assert(found)
+
+  local lnum = slnum-1
+  local hl_elem = ntangle_inc.Tto_hl_elem(buf, lnum)
+
+  if hl_elem and hl_elem.part then
+  	hl_elem = hl_elem.part
+  end
+
+  local section_name = hl_elem.name
 
   local all_lines = {}
   for lnum=slnum-1,elnum-1 do
@@ -284,14 +288,15 @@ function M.send_ntangle_visual_v2()
     	local hl = Tangle.get_hl_from_ll(ll)
     	assert(hl)
 
-    	hl:getlines_single_lit(hl_elem, name, all_lines)
+    	hl:getlines_single_lit(hl_elem, section_name, all_lines)
     else
       return
     end
+
   end
 
 
-  M.send_code(name, all_lines)
+  M.send_code(section_name, all_lines)
 end
 
 function M.toggle_backend()
