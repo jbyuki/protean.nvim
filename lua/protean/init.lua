@@ -77,6 +77,24 @@ function M.connect(port, on_connected, on_not_connected, max_retries, filetype)
       if on_connected then
         vim.schedule(function() on_connected() end)
       end
+
+      if filetype == 'javascript' then
+        vim.schedule(function()
+          local msg = {}
+          msg.cmd = "server"
+          msg.data = {}
+          msg.data.name = 'importmap'
+          msg.data.importmap = vim.g.protean_js_importmap or {}
+          table.insert(send_queue, msg)
+
+          if client_co and coroutine.status(client_co) == "suspended" then
+            coroutine.resume(client_co)
+          else
+            vim.api.nvim_echo({{"Client not connected", "Error"}}, true, {})
+          end
+
+        end)
+      end
       client:read_start(vim.schedule_wrap(function(err, data)
         if err then
           vim.schedule(function()

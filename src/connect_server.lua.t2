@@ -35,6 +35,8 @@ try_connect = function(num_retries)
     if on_connected then
       vim.schedule(function() on_connected() end)
     end
+
+    ; if javascript send importmap configurations
     client:read_start(vim.schedule_wrap(function(err, data)
       if err then
         vim.schedule(function()

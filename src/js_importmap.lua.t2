@@ -1,0 +1,14 @@
+;;; protean
+;; if javascript send importmap configurations
+if filetype == 'javascript' then
+  vim.schedule(function()
+    local msg = {}
+    msg.cmd = "server"
+    msg.data = {}
+    msg.data.name = 'importmap'
+    msg.data.importmap = vim.g.protean_js_importmap or {}
+    table.insert(send_queue, msg)
+
+    ; resume client if running otherwise error
+  end)
+end
